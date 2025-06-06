@@ -100,18 +100,34 @@
     return best;
   }
 
-  function findComboBoxPageSize() {
-    const combos = Array.from(document.querySelectorAll('[role="combobox"]'));
-    let best = null;
-    combos.forEach(combo => {
+  function waitForElement(selector, timeout = 1000) {
+    return new Promise(resolve => {
+      const existing = document.querySelector(selector);
+      if (existing) return resolve(existing);
+      let timer = null;
+      const obs = new MutationObserver(() => {
+        const el = document.querySelector(selector);
+        if (el) {
+          clearTimeout(timer);
+          obs.disconnect();
+          resolve(el);
+        }
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+      timer = setTimeout(() => {
+        obs.disconnect();
+        resolve(null);
+      }, timeout);
+    });
+  }
+
+  async function findComboBoxPageSize() {
+    const combos = Array.from(document.querySelectorAll('[role="combobox"][aria-controls]'));
+    for (const combo of combos) {
       const listId = combo.getAttribute('aria-controls');
-      if (!listId) return;
-      const openDropdown = () => combo.dispatchEvent(new Event('click', { bubbles: true }));
-      if (combo.getAttribute('aria-expanded') !== 'true') {
-        openDropdown();
-      }
-      const listbox = document.getElementById(listId);
-      if (!listbox) return;
+      combo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      const listbox = await waitForElement('#' + CSS.escape(listId), 1000);
+      if (!listbox) continue;
       let bestOpt = null;
       let bestVal = -1;
       const options = Array.from(listbox.querySelectorAll('[role="option"], li, div'));
@@ -129,11 +145,11 @@
           bestOpt = opt;
         }
       });
-      if (bestOpt && (!best || bestVal > best.value)) {
-        best = { combo, option: bestOpt, value: bestVal };
+      if (bestOpt) {
+        return { combo, option: bestOpt };
       }
-    });
-    return best;
+    }
+    return null;
   }
 
   function waitForTableUpdate(table) {
@@ -153,7 +169,7 @@
       });
       observer.observe(target, { childList: true, subtree: true });
       timer = setTimeout(finish, 500);
-      maxTimer = setTimeout(finish, 3000);
+      maxTimer = setTimeout(finish, 5000);
     });
   }
 
@@ -168,16 +184,12 @@
       return waitForTableUpdate(table);
     }
 
-    const comboInfo = findComboBoxPageSize();
-    if (!comboInfo) return Promise.resolve();
-    const current = (comboInfo.combo.value || comboInfo.combo.textContent || '').trim();
-    if (current === comboInfo.option.textContent.trim()) return Promise.resolve();
-    comboInfo.combo.dispatchEvent(new Event('click', { bubbles: true }));
-    return new Promise(resolve => {
-      setTimeout(() => {
-        comboInfo.option.dispatchEvent(new Event('click', { bubbles: true }));
-        waitForTableUpdate(table).then(resolve);
-      }, 100);
+    return findComboBoxPageSize().then(comboInfo => {
+      if (!comboInfo) return;
+      const current = (comboInfo.combo.value || comboInfo.combo.textContent || '').trim();
+      if (current === comboInfo.option.textContent.trim()) return;
+      comboInfo.option.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      return waitForTableUpdate(table);
     });
   }
 
