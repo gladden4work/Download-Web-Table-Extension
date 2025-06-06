@@ -1,0 +1,7 @@
+{
+  "extName": {"message": "Table Sniffer"},
+  "extDescription": {"message": "Detect and export HTML tables to CSV or Excel clipboard."},
+  "preview": {"message": "Preview"},
+  "downloadCsv": {"message": "Download CSV"},
+  "copyExcel": {"message": "Copy for Excel"}
+}

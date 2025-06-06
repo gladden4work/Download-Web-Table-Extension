@@ -1,0 +1,7 @@
+body { font-family: sans-serif; margin: 10px; width: 300px; }
+#table-list { list-style: none; padding: 0; }
+#table-list li { margin-bottom: 5px; }
+button { margin-left: 5px; }
+#preview-table { border-collapse: collapse; max-height: 150px; overflow: auto; }
+#preview-table td { border: 1px solid #ccc; padding: 2px 4px; }
+.buttons { margin-top: 5px; }
