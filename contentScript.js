@@ -136,31 +136,53 @@
     return best;
   }
 
-  function adjustPageSize() {
+  function waitForTableUpdate(table) {
+    return new Promise(resolve => {
+      const target = table.tBodies[0] || table;
+      let timer = null;
+      let maxTimer = null;
+      const finish = () => {
+        clearTimeout(timer);
+        clearTimeout(maxTimer);
+        observer.disconnect();
+        resolve();
+      };
+      const observer = new MutationObserver(() => {
+        clearTimeout(timer);
+        timer = setTimeout(finish, 500);
+      });
+      observer.observe(target, { childList: true, subtree: true });
+      timer = setTimeout(finish, 500);
+      maxTimer = setTimeout(finish, 3000);
+    });
+  }
+
+  function adjustPageSize(table) {
     const info = findPageSizeSelect();
     if (info) {
-      if (info.select.value === info.option.value) return Promise.resolve();
+      const selectedText = info.select.options[info.select.selectedIndex]?.textContent.trim();
+      if (selectedText === info.option.textContent.trim()) return Promise.resolve();
       info.select.value = info.option.value;
       info.select.dispatchEvent(new Event('input', { bubbles: true }));
       info.select.dispatchEvent(new Event('change', { bubbles: true }));
-      return new Promise(resolve => setTimeout(resolve, 2000));
+      return waitForTableUpdate(table);
     }
 
     const comboInfo = findComboBoxPageSize();
     if (!comboInfo) return Promise.resolve();
-    const current = comboInfo.combo.value || comboInfo.combo.textContent;
-    if (/all/i.test(current)) return Promise.resolve();
+    const current = (comboInfo.combo.value || comboInfo.combo.textContent || '').trim();
+    if (current === comboInfo.option.textContent.trim()) return Promise.resolve();
     comboInfo.combo.dispatchEvent(new Event('click', { bubbles: true }));
     return new Promise(resolve => {
       setTimeout(() => {
         comboInfo.option.dispatchEvent(new Event('click', { bubbles: true }));
-        setTimeout(resolve, 2000);
+        waitForTableUpdate(table).then(resolve);
       }, 100);
     });
   }
 
   function handleDownload(table) {
-    adjustPageSize().then(() => {
+    adjustPageSize(table).then(() => {
       const data = getTableDataByElement(table);
       const csv = encodeCsv(data);
       const filename = 'table-' + new Date().toISOString().slice(0, 10) + '.csv';
