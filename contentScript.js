@@ -12,14 +12,20 @@
     const style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
+      .table-sniffer-wrapper {
+        position: relative;
+        display: inline-block;
+      }
       .table-sniffer-download-btn {
         position: absolute;
         top: 2px;
         right: 2px;
-        z-index: 9999;
+        z-index: 2147483647;
         padding: 2px 4px;
         font-size: 12px;
         cursor: pointer;
+        background: #fff;
+        border: 1px solid #ccc;
       }
     `;
     document.head.appendChild(style);
@@ -115,8 +121,11 @@
   function addButtons() {
     ensureStyle();
     detectedTables.forEach(table => {
-      if (table.querySelector('.table-sniffer-download-btn')) return;
-      table.style.position = table.style.position || 'relative';
+      if (table.dataset.snifferWrapped) return;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'table-sniffer-wrapper';
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
       const btn = document.createElement('button');
       btn.textContent = chrome.i18n ? chrome.i18n.getMessage('downloadCsv') || 'Download CSV' : 'Download CSV';
       btn.className = 'table-sniffer-download-btn';
@@ -124,7 +133,8 @@
         e.stopPropagation();
         handleDownload(table);
       });
-      table.appendChild(btn);
+      wrapper.appendChild(btn);
+      table.dataset.snifferWrapped = '1';
     });
   }
 
@@ -160,6 +170,16 @@
       highlightTable(msg.id);
     }
   });
+
+  let moTimer = null;
+  const observer = new MutationObserver(() => {
+    if (moTimer) clearTimeout(moTimer);
+    moTimer = setTimeout(() => {
+      detectTables(false);
+      moTimer = null;
+    }, 500);
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 
   detectTables(false);
 })();

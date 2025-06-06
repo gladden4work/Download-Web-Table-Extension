@@ -5,6 +5,7 @@ This extension detects HTML tables on any page and adds a **Download CSV** butto
 ## Features
 
 - Inline download button on every detected table
+- Buttons appear for tables added dynamically after page load
 - Preview table contents via popup
 - Download as CSV or copy as TSV
 - Options for delimiter and line endings
