@@ -19,7 +19,7 @@
       .table-sniffer-download-btn {
         position: absolute;
         top: 2px;
-        right: 2px;
+        left: 2px;
         z-index: 2147483647;
         padding: 2px 4px;
         font-size: 12px;
@@ -105,8 +105,9 @@
     if (!info) return Promise.resolve();
     if (info.select.value === info.option.value) return Promise.resolve();
     info.select.value = info.option.value;
+    info.select.dispatchEvent(new Event('input', { bubbles: true }));
     info.select.dispatchEvent(new Event('change', { bubbles: true }));
-    return new Promise(resolve => setTimeout(resolve, 1000));
+    return new Promise(resolve => setTimeout(resolve, 2000));
   }
 
   function handleDownload(table) {

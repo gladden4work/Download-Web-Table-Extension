@@ -1,6 +1,6 @@
 # Table Sniffer Chrome Extension
 
-This extension detects HTML tables on any page and adds a **Download CSV** button to the top-right corner of each table. Clicking the button exports that table as CSV. A background service worker now handles the actual file download. A popup UI is also available for preview and clipboard copy.
+This extension detects HTML tables on any page and adds a **Download CSV** button to the top-left corner of each table. Clicking the button exports that table as CSV. Before downloading, the extension tries to expand paginated tables to show all rows. A background service worker handles the file download. A popup UI is also available for preview and clipboard copy.
 
 ## Features
 
