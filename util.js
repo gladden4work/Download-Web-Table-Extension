@@ -12,10 +12,15 @@ function encodeCsv(data, delimiter = ',', lineEnd = '\n') {
 }
 
 function downloadCsv(filename, csvText) {
-  const blobUrl = URL.createObjectURL(new Blob(['\uFEFF' + csvText], { type: 'text/csv' }));
-  chrome.downloads.download({ url: blobUrl, filename }, () => {
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-  });
+  const csvWithBom = '\uFEFF' + csvText;
+  if (chrome.downloads && chrome.downloads.download) {
+    const blobUrl = URL.createObjectURL(new Blob([csvWithBom], { type: 'text/csv' }));
+    chrome.downloads.download({ url: blobUrl, filename }, () => {
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    });
+  } else {
+    chrome.runtime.sendMessage({ action: 'downloadCsv', filename, csv: csvWithBom });
+  }
 }
 
 function copyText(text) {
