@@ -9,6 +9,7 @@ This extension detects HTML tables on any page and adds a **Download CSV** butto
 - Preview table contents via popup
 - Download as CSV or copy as TSV
 - Options for delimiter and line endings
+- Automatically expands paginated tables, including custom dropdowns like Quasar
 
 ## Development
 

@@ -100,14 +100,63 @@
     return best;
   }
 
+  function findComboBoxPageSize() {
+    const combos = Array.from(document.querySelectorAll('[role="combobox"]'));
+    let best = null;
+    combos.forEach(combo => {
+      const listId = combo.getAttribute('aria-controls');
+      if (!listId) return;
+      const openDropdown = () => combo.dispatchEvent(new Event('click', { bubbles: true }));
+      if (combo.getAttribute('aria-expanded') !== 'true') {
+        openDropdown();
+      }
+      const listbox = document.getElementById(listId);
+      if (!listbox) return;
+      let bestOpt = null;
+      let bestVal = -1;
+      const options = Array.from(listbox.querySelectorAll('[role="option"], li, div'));
+      options.forEach(opt => {
+        const text = opt.textContent.trim();
+        let val = -1;
+        if (/all/i.test(text)) {
+          val = Infinity;
+        } else {
+          const num = parseInt(text.replace(/\D/g, ''), 10);
+          if (!isNaN(num)) val = num;
+        }
+        if (val > bestVal) {
+          bestVal = val;
+          bestOpt = opt;
+        }
+      });
+      if (bestOpt && (!best || bestVal > best.value)) {
+        best = { combo, option: bestOpt, value: bestVal };
+      }
+    });
+    return best;
+  }
+
   function adjustPageSize() {
     const info = findPageSizeSelect();
-    if (!info) return Promise.resolve();
-    if (info.select.value === info.option.value) return Promise.resolve();
-    info.select.value = info.option.value;
-    info.select.dispatchEvent(new Event('input', { bubbles: true }));
-    info.select.dispatchEvent(new Event('change', { bubbles: true }));
-    return new Promise(resolve => setTimeout(resolve, 2000));
+    if (info) {
+      if (info.select.value === info.option.value) return Promise.resolve();
+      info.select.value = info.option.value;
+      info.select.dispatchEvent(new Event('input', { bubbles: true }));
+      info.select.dispatchEvent(new Event('change', { bubbles: true }));
+      return new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    const comboInfo = findComboBoxPageSize();
+    if (!comboInfo) return Promise.resolve();
+    const current = comboInfo.combo.value || comboInfo.combo.textContent;
+    if (/all/i.test(current)) return Promise.resolve();
+    comboInfo.combo.dispatchEvent(new Event('click', { bubbles: true }));
+    return new Promise(resolve => {
+      setTimeout(() => {
+        comboInfo.option.dispatchEvent(new Event('click', { bubbles: true }));
+        setTimeout(resolve, 2000);
+      }, 100);
+    });
   }
 
   function handleDownload(table) {
