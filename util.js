@@ -14,9 +14,18 @@ function encodeCsv(data, delimiter = ',', lineEnd = '\n') {
 function downloadCsv(filename, csvText) {
   const csvWithBom = '\uFEFF' + csvText;
   if (chrome.downloads && chrome.downloads.download) {
-    const blobUrl = URL.createObjectURL(new Blob([csvWithBom], { type: 'text/csv' }));
+    const blob = new Blob([csvWithBom], { type: 'text/csv' });
+    const URLObject = (typeof URL !== 'undefined' && URL.createObjectURL ? URL : (self && self.URL));
+    let blobUrl;
+    if (URLObject && typeof URLObject.createObjectURL === 'function') {
+      blobUrl = URLObject.createObjectURL(blob);
+    } else {
+      blobUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvWithBom);
+    }
     chrome.downloads.download({ url: blobUrl, filename }, () => {
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      if (blobUrl.startsWith('blob:') && URLObject && URLObject.revokeObjectURL) {
+        setTimeout(() => URLObject.revokeObjectURL(blobUrl), 1000);
+      }
     });
   } else {
     chrome.runtime.sendMessage({ action: 'downloadCsv', filename, csv: csvWithBom });
