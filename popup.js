@@ -66,11 +66,39 @@ function showPreview(id) {
   chrome.tabs.sendMessage(currentTabId, { action: 'highlightTable', id });
 }
 
+// Set up button labels
 document.getElementById('download').textContent = chrome.i18n.getMessage('downloadCsv');
 document.getElementById('copy').textContent = chrome.i18n.getMessage('copyExcel');
 
+// Add Auto Download button functionality
+if (document.getElementById('auto-download')) {
+  document.getElementById('auto-download').textContent = 'Auto Download CSV';
+  document.getElementById('auto-download').addEventListener('click', triggerAutoDownload);
+}
+
 document.getElementById('download').addEventListener('click', () => exportTable('csv'));
 document.getElementById('copy').addEventListener('click', () => exportTable('tsv'));
+
+function triggerAutoDownload() {
+  if (!currentTabId) return;
+  
+  // Show loading state
+  const autoDownloadBtn = document.getElementById('auto-download');
+  const originalText = autoDownloadBtn.textContent;
+  autoDownloadBtn.textContent = 'Loading All Data...';
+  autoDownloadBtn.disabled = true;
+
+  chrome.tabs.sendMessage(currentTabId, { action: 'autoDownload' }, response => {
+    // Reset button state
+    autoDownloadBtn.textContent = originalText;
+    autoDownloadBtn.disabled = false;
+    
+    if (response && response.success) {
+      // Close popup after successful auto-download
+      window.close();
+    }
+  });
+}
 
 function exportTable(type) {
   if (currentTableId == null) return;
@@ -84,6 +112,54 @@ function exportTable(type) {
       copyText(tsv);
     }
   });
+}
+
+// Domain management for auto-download
+function toggleAutoDownloadForCurrentDomain() {
+  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+    const currentDomain = new URL(tabs[0].url).hostname;
+    
+    chrome.storage.sync.get(['autoDownloadDomains'], (result) => {
+      let autoDownloadDomains = result.autoDownloadDomains || [];
+      
+      if (autoDownloadDomains.includes(currentDomain)) {
+        // Remove domain
+        autoDownloadDomains = autoDownloadDomains.filter(domain => domain !== currentDomain);
+        console.log('Disabled auto-download for:', currentDomain);
+      } else {
+        // Add domain
+        autoDownloadDomains.push(currentDomain);
+        console.log('Enabled auto-download for:', currentDomain);
+      }
+      
+      chrome.storage.sync.set({ autoDownloadDomains }, () => {
+        updateAutoDownloadButton(autoDownloadDomains.includes(currentDomain));
+      });
+    });
+  });
+}
+
+function updateAutoDownloadButton(isEnabled) {
+  const toggleBtn = document.getElementById('toggle-auto-download');
+  if (toggleBtn) {
+    toggleBtn.textContent = isEnabled ? 'Disable Auto Download' : 'Enable Auto Download';
+    toggleBtn.style.backgroundColor = isEnabled ? '#d73502' : '#0b57d0';
+  }
+}
+
+// Initialize auto-download toggle button
+chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+  if (tabs[0]) {
+    const currentDomain = new URL(tabs[0].url).hostname;
+    chrome.storage.sync.get(['autoDownloadDomains'], (result) => {
+      const autoDownloadDomains = result.autoDownloadDomains || [];
+      updateAutoDownloadButton(autoDownloadDomains.includes(currentDomain));
+    });
+  }
+});
+
+if (document.getElementById('toggle-auto-download')) {
+  document.getElementById('toggle-auto-download').addEventListener('click', toggleAutoDownloadForCurrentDomain);
 }
 
 loadOptions().then(requestTables);

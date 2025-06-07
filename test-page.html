@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Table Sniffer Test Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        button { margin: 10px; padding: 10px; }
+        .pagination { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Table Sniffer Test Page</h1>
+    
+    <div class="pagination">
+        <button onclick="loadAllData()">Show All</button>
+        <button onclick="loadPage(1)">Page 1</button>
+        <button onclick="loadPage(2)">Page 2</button>
+        <select id="pageSize" onchange="changePage()">
+            <option value="5">5 per page</option>
+            <option value="10">10 per page</option>
+            <option value="all">All</option>
+        </select>
+    </div>
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Salary</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <script>
+        const fullData = [
+            { id: 1, name: 'John Doe', email: 'john@example.com', department: 'Engineering', salary: 75000 },
+            { id: 2, name: 'Jane Smith', email: 'jane@example.com', department: 'Marketing', salary: 65000 },
+            { id: 3, name: 'Bob Johnson', email: 'bob@example.com', department: 'Sales', salary: 55000 },
+            { id: 4, name: 'Alice Brown', email: 'alice@example.com', department: 'HR', salary: 60000 },
+            { id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', department: 'Engineering', salary: 80000 },
+            { id: 6, name: 'Diana Davis', email: 'diana@example.com', department: 'Marketing', salary: 70000 },
+            { id: 7, name: 'Eve Miller', email: 'eve@example.com', department: 'Sales', salary: 58000 },
+            { id: 8, name: 'Frank Garcia', email: 'frank@example.com', department: 'Engineering', salary: 82000 },
+            { id: 9, name: 'Grace Lee', email: 'grace@example.com', department: 'HR', salary: 62000 },
+            { id: 10, name: 'Henry White', email: 'henry@example.com', department: 'Marketing', salary: 68000 },
+            { id: 11, name: 'Ivy Taylor', email: 'ivy@example.com', department: 'Sales', salary: 59000 },
+            { id: 12, name: 'Jack Anderson', email: 'jack@example.com', department: 'Engineering', salary: 78000 },
+            { id: 13, name: 'Karen Thomas', email: 'karen@example.com', department: 'HR', salary: 64000 },
+            { id: 14, name: 'Leo Martinez', email: 'leo@example.com', department: 'Marketing', salary: 72000 },
+            { id: 15, name: 'Mia Robinson', email: 'mia@example.com', department: 'Sales', salary: 61000 }
+        ];
+
+        let currentData = fullData.slice(0, 5); // Start with first 5 rows
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.id}</td>
+                    <td>${row.name}</td>
+                    <td>${row.email}</td>
+                    <td>${row.department}</td>
+                    <td>$${row.salary.toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function loadAllData() {
+            console.log('Loading all data...');
+            // Simulate loading delay
+            setTimeout(() => {
+                currentData = [...fullData];
+                renderTable(currentData);
+                console.log('All data loaded');
+            }, 1000);
+        }
+
+        function loadPage(page) {
+            const pageSize = 5;
+            const startIndex = (page - 1) * pageSize;
+            currentData = fullData.slice(startIndex, startIndex + pageSize);
+            renderTable(currentData);
+        }
+
+        function changePage() {
+            const pageSize = document.getElementById('pageSize').value;
+            if (pageSize === 'all') {
+                loadAllData();
+            } else {
+                const size = parseInt(pageSize);
+                currentData = fullData.slice(0, size);
+                renderTable(currentData);
+            }
+        }
+
+        // Initial render
+        renderTable(currentData);
+    </script>
+</body>
+</html>
