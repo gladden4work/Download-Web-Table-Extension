@@ -8,19 +8,31 @@
   let isWaitingForTableLoad = false;
 
   function detectTables(showHidden) {
+    console.log('detectTables called, showHidden:', showHidden);
     detectedTables = [];
     const tables = Array.from(document.querySelectorAll('table'));
+    console.log(`Found ${tables.length} table elements`);
+    
     let id = 0;
     const infos = [];
-    tables.forEach(table => {
+    tables.forEach((table, index) => {
+      console.log(`Processing table ${index + 1}:`, table);
       const visible = showHidden || (table.offsetWidth > 0 && table.offsetHeight > 0);
+      console.log(`Table ${index + 1} visible:`, visible, `(${table.offsetWidth}x${table.offsetHeight})`);
+      
       if (!visible) return;
+      
       const cellCount = table.querySelectorAll('th, td').length;
+      console.log(`Table ${index + 1} cell count:`, cellCount);
+      
       if (cellCount < 2) return;
+      
       table.dataset.tableSnifferId = id;
       detectedTables.push(table);
       const rows = table.rows.length;
       const cols = table.rows[0] ? table.rows[0].cells.length : 0;
+      console.log(`Table ${index + 1} dimensions: ${rows} rows x ${cols} cols`);
+      
       const preview = [];
       for (let r = 0; r < Math.min(2, rows); r++) {
         const row = [];
@@ -33,20 +45,34 @@
       infos.push({ id: id, rows, cols, preview });
       id++;
     });
+    
+    console.log(`detectTables returning ${infos.length} table infos:`, infos);
     return infos;
   }
 
   function getTableData(id) {
+    console.log('getTableData called with id:', id);
     const table = detectedTables[id];
-    if (!table) return null;
+    
+    if (!table) {
+      console.error(`No table found with id ${id}. Available tables:`, detectedTables.length);
+      return null;
+    }
+    
+    console.log('Found table:', table, `with ${table.rows.length} rows`);
+    
     const data = [];
-    for (const row of table.rows) {
+    for (let i = 0; i < table.rows.length; i++) {
+      const row = table.rows[i];
       const rowData = [];
-      for (const cell of row.cells) {
+      for (let j = 0; j < row.cells.length; j++) {
+        const cell = row.cells[j];
         rowData.push(cell.innerText.trim());
       }
       data.push(rowData);
     }
+    
+    console.log(`getTableData returning ${data.length} rows of data`);
     return data;
   }
 
@@ -193,20 +219,58 @@
         </span>
       `;
       
-      downloadBtn.addEventListener('click', () => {
+      downloadBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
         console.log('Download button clicked, starting auto-download...');
         
-        // First, try to load all data
-        const loadAllClicked = tryLoadAllData();
+        // Show loading state
+        const originalText = downloadBtn.innerHTML;
+        downloadBtn.innerHTML = `
+          <span class="q-focus-helper"></span>
+          <span class="q-btn__content text-center col items-center q-anchor--skip justify-center row">
+            <i class="q-icon on-left notranslate material-icons" aria-hidden="true" role="img">hourglass_empty</i>
+            <span class="block">Loading...</span>
+          </span>
+        `;
+        downloadBtn.disabled = true;
         
-        if (loadAllClicked) {
-          console.log('Load all triggered, waiting for table to complete loading...');
-          waitForTableComplete(() => {
-            autoDownloadLargestTable();
-          });
-        } else {
-          console.log('No load all option found, downloading current table state...');
-          autoDownloadLargestTable();
+        // Function to restore button state
+        const restoreButton = () => {
+          downloadBtn.innerHTML = originalText;
+          downloadBtn.disabled = false;
+        };
+        
+        try {
+          // First, try to load all data
+          console.log('Attempting to expand table...');
+          const loadAllClicked = tryLoadAllData();
+          
+          if (loadAllClicked) {
+            console.log('Load all triggered, waiting for table to complete loading...');
+            setTimeout(() => {
+              try {
+                autoDownloadLargestTable();
+                restoreButton();
+              } catch (error) {
+                console.error('Error during delayed download:', error);
+                restoreButton();
+              }
+            }, 5000); // Wait 5 seconds for table to load
+          } else {
+            console.log('No load all option found, downloading current table state...');
+            try {
+              autoDownloadLargestTable();
+              restoreButton();
+            } catch (error) {
+              console.error('Error during immediate download:', error);
+              restoreButton();
+            }
+          }
+        } catch (error) {
+          console.error('Error in download process:', error);
+          restoreButton();
         }
       });
 
@@ -310,47 +374,68 @@
 
   // Function to automatically download CSV of the largest table
   function autoDownloadLargestTable() {
-    const tables = detectTables(true);
-    if (tables.length === 0) {
-      console.log('No tables found for auto-download');
-      return;
-    }
-
-    // Find the largest table by row count
-    const largestTable = tables.reduce((max, table) => 
-      table.rows > max.rows ? table : max
-    );
-
-    console.log(`Auto-downloading largest table (ID: ${largestTable.id}, ${largestTable.rows} rows)`);
+    console.log('Starting autoDownloadLargestTable...');
     
-    const data = getTableData(largestTable.id);
-    if (data && data.length > 0) {
-      // Create CSV content
-      const csv = data.map(row => 
-        row.map(cell => {
-          // Escape CSV cells properly
-          cell = String(cell || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-          const needsQuote = cell.includes('"') || cell.includes(',') || cell.includes('\n');
-          cell = cell.replace(/"/g, '""');
-          return needsQuote ? `"${cell}"` : cell;
-        }).join(',')
-      ).join('\n');
+    try {
+      const tables = detectTables(true);
+      console.log(`Found ${tables.length} tables`);
+      
+      if (tables.length === 0) {
+        console.log('No tables found for auto-download');
+        alert('No tables found on this page');
+        return;
+      }
 
-      // Download the CSV
-      const filename = `table-export-${new Date().toISOString().slice(0, 10)}.csv`;
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
+      // Find the largest table by row count
+      const largestTable = tables.reduce((max, table) => 
+        table.rows > max.rows ? table : max
+      );
+
+      console.log(`Auto-downloading largest table (ID: ${largestTable.id}, ${largestTable.rows} rows, ${largestTable.cols} cols)`);
       
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const data = getTableData(largestTable.id);
+      console.log('Retrieved table data:', data ? `${data.length} rows` : 'null');
       
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      
-      console.log(`CSV downloaded: ${filename} (${data.length} rows)`);
+      if (data && data.length > 0) {
+        // Create CSV content
+        const csv = data.map(row => 
+          row.map(cell => {
+            // Escape CSV cells properly
+            cell = String(cell || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const needsQuote = cell.includes('"') || cell.includes(',') || cell.includes('\n');
+            cell = cell.replace(/"/g, '""');
+            return needsQuote ? `"${cell}"` : cell;
+          }).join(',')
+        ).join('\n');
+
+        console.log(`CSV content created, length: ${csv.length} characters`);
+
+        // Download the CSV
+        const filename = `table-export-${new Date().toISOString().slice(0, 10)}.csv`;
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        
+        console.log('Triggering download...');
+        link.click();
+        
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        
+        console.log(`CSV downloaded: ${filename} (${data.length} rows)`);
+        alert(`CSV downloaded successfully! File: ${filename} (${data.length} rows)`);
+      } else {
+        console.error('No data retrieved from table');
+        alert('No data found in table');
+      }
+    } catch (error) {
+      console.error('Error in autoDownloadLargestTable:', error);
+      alert(`Download failed: ${error.message}`);
     }
   }
 
