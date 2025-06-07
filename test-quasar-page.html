@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quasar Table Test Page</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/quasar@2.6.0/dist/quasar.prod.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; padding: 20px; }
+        .test-table { margin: 20px 0; }
+        .q-table__container { border: 1px solid #ddd; border-radius: 4px; }
+        .q-table__top { 
+            background: #f5f5f5; 
+            padding: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            position: relative;
+        }
+        .q-table__bottom { 
+            background: #f9f9f9; 
+            padding: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .q-table__bottom-item { font-size: 13px; color: #666; }
+        .q-select { 
+            min-width: 100px; 
+            border: 1px solid #ccc; 
+            padding: 5px 10px; 
+            border-radius: 4px; 
+            position: relative; 
+        }
+        .q-select__dropdown-icon { 
+            margin-left: 10px; 
+            cursor: pointer; 
+            user-select: none; 
+        }
+        .q-field--borderless { border: none; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .pagination-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            display: none;
+            z-index: 1000;
+        }
+        .pagination-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .pagination-option:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quasar Table Test Page</h1>
+    <p>This page simulates a Quasar Vue.js table with pagination to test the Chrome extension's auto-download functionality.</p>
+
+    <div class="test-table">
+        <div class="q-table__container">
+            <div class="q-table__top">
+                <div>Employee Data</div>
+                <div>Table Tools</div>
+            </div>
+            
+            <table id="quasar-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Salary</th>
+                        <th>Hire Date</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- Initial 10 rows -->
+                    <tr><td>1</td><td>John Smith</td><td>Engineering</td><td>$75,000</td><td>2020-01-15</td></tr>
+                    <tr><td>2</td><td>Jane Doe</td><td>Marketing</td><td>$65,000</td><td>2020-02-20</td></tr>
+                    <tr><td>3</td><td>Bob Johnson</td><td>Sales</td><td>$55,000</td><td>2020-03-10</td></tr>
+                    <tr><td>4</td><td>Alice Brown</td><td>HR</td><td>$60,000</td><td>2020-04-05</td></tr>
+                    <tr><td>5</td><td>Charlie Wilson</td><td>Engineering</td><td>$80,000</td><td>2020-05-12</td></tr>
+                    <tr><td>6</td><td>Diana Davis</td><td>Finance</td><td>$70,000</td><td>2020-06-18</td></tr>
+                    <tr><td>7</td><td>Edward Miller</td><td>Operations</td><td>$58,000</td><td>2020-07-22</td></tr>
+                    <tr><td>8</td><td>Fiona Taylor</td><td>Legal</td><td>$85,000</td><td>2020-08-30</td></tr>
+                    <tr><td>9</td><td>George White</td><td>IT</td><td>$72,000</td><td>2020-09-14</td></tr>
+                    <tr><td>10</td><td>Helen Green</td><td>Customer Service</td><td>$45,000</td><td>2020-10-25</td></tr>
+                </tbody>
+            </table>
+
+            <div class="q-table__bottom">
+                <div class="q-table__bottom-item" id="pagination-info">1-10 of 2701</div>
+                
+                <div class="q-field--borderless q-select" id="rows-per-page">
+                    <span id="current-selection">10</span>
+                    <span class="q-select__dropdown-icon" onclick="toggleDropdown()">▼</span>
+                    <div class="pagination-dropdown" id="dropdown">
+                        <div class="pagination-option" onclick="setRowsPerPage(10)">10</div>
+                        <div class="pagination-option" onclick="setRowsPerPage(25)">25</div>
+                        <div class="pagination-option" onclick="setRowsPerPage(50)">50</div>
+                        <div class="pagination-option" onclick="setRowsPerPage(100)">100</div>
+                        <div class="pagination-option" onclick="setRowsPerPage(2701)">All</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const allData = [
+            {id: 1, name: "John Smith", dept: "Engineering", salary: "$75,000", date: "2020-01-15"},
+            {id: 2, name: "Jane Doe", dept: "Marketing", salary: "$65,000", date: "2020-02-20"},
+            {id: 3, name: "Bob Johnson", dept: "Sales", salary: "$55,000", date: "2020-03-10"},
+            {id: 4, name: "Alice Brown", dept: "HR", salary: "$60,000", date: "2020-04-05"},
+            {id: 5, name: "Charlie Wilson", dept: "Engineering", salary: "$80,000", date: "2020-05-12"},
+            {id: 6, name: "Diana Davis", dept: "Finance", salary: "$70,000", date: "2020-06-18"},
+            {id: 7, name: "Edward Miller", dept: "Operations", salary: "$58,000", date: "2020-07-22"},
+            {id: 8, name: "Fiona Taylor", dept: "Legal", salary: "$85,000", date: "2020-08-30"},
+            {id: 9, name: "George White", dept: "IT", salary: "$72,000", date: "2020-09-14"},
+            {id: 10, name: "Helen Green", dept: "Customer Service", salary: "$45,000", date: "2020-10-25"},
+        ];
+
+        // Generate more test data to simulate 2701 records
+        function generateTestData() {
+            const data = [...allData];
+            const departments = ["Engineering", "Marketing", "Sales", "HR", "Finance", "Operations", "Legal", "IT", "Customer Service"];
+            const firstNames = ["John", "Jane", "Bob", "Alice", "Charlie", "Diana", "Edward", "Fiona", "George", "Helen"];
+            const lastNames = ["Smith", "Doe", "Johnson", "Brown", "Wilson", "Davis", "Miller", "Taylor", "White", "Green"];
+            
+            for (let i = 11; i <= 2701; i++) {
+                const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+                const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+                const dept = departments[Math.floor(Math.random() * departments.length)];
+                const salary = `$${(40000 + Math.floor(Math.random() * 60000)).toLocaleString()}`;
+                const year = 2020 + Math.floor(Math.random() * 4);
+                const month = Math.floor(Math.random() * 12) + 1;
+                const day = Math.floor(Math.random() * 28) + 1;
+                const date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                
+                data.push({id: i, name: `${firstName} ${lastName}`, dept, salary, date});
+            }
+            return data;
+        }
+
+        const fullData = generateTestData();
+        console.log(`Generated ${fullData.length} records for testing`);
+
+        function toggleDropdown() {
+            const dropdown = document.getElementById('dropdown');
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function setRowsPerPage(count) {
+            const currentSelection = document.getElementById('current-selection');
+            const paginationInfo = document.getElementById('pagination-info');
+            const dropdown = document.getElementById('dropdown');
+            const tableBody = document.getElementById('table-body');
+            
+            currentSelection.textContent = count === 2701 ? 'All' : count.toString();
+            dropdown.style.display = 'none';
+            
+            // Simulate loading delay
+            setTimeout(() => {
+                const dataToShow = fullData.slice(0, count);
+                tableBody.innerHTML = '';
+                
+                dataToShow.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.id}</td>
+                        <td>${row.name}</td>
+                        <td>${row.dept}</td>
+                        <td>${row.salary}</td>
+                        <td>${row.date}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+                
+                const endCount = Math.min(count, fullData.length);
+                paginationInfo.textContent = `1-${endCount} of ${fullData.length}`;
+                
+                console.log(`Updated table to show ${endCount} of ${fullData.length} records`);
+            }, 1000); // 1 second delay to simulate loading
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const select = document.getElementById('rows-per-page');
+            const dropdown = document.getElementById('dropdown');
+            if (!select.contains(event.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
