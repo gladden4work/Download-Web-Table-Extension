@@ -4,7 +4,6 @@
 
 **Project Name**: Web Table Auto-Download Extension  
 **Repository**: https://github.com/gladden4work/Download-Web-Table-Extension  
-**Local Path**: `/Users/gladdenchoi/Documents/Option 3/table-sniffer-extension`  
 **Primary Objective**: Automatically detect, expand, and download table data from web pages without manual interaction
 
 ## 🏗️ Architecture Overview
