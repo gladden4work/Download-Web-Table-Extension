@@ -59,164 +59,93 @@
     }
   }
 
-  // New function to automatically detect "Load All" or "Show All" buttons and click them
+  // Enhanced function to try loading all data from tables
   function tryLoadAllData() {
-    console.log('Attempting to load all data...');
+    console.log('Attempting to load all table data...');
     
-    // Quasar-specific selectors for pagination and records per page
-    const quasarSelectors = [
-      // Quasar records per page dropdown
-      '.q-table__select .q-select__dropdown-icon',
-      '.q-field--borderless.q-select .q-select__dropdown-icon',
-      // Quasar pagination controls
-      '.q-table__bottom .q-select',
-      // General pagination selectors
-      'select[aria-label*="per page" i]',
-      'select[aria-label*="records" i]'
-    ];
-
-    // First, try Quasar-specific approach
-    if (tryQuasarPagination()) return true;
-    
-    const loadAllSelectors = [
-      'button:contains("All")',
+    // Common selectors for "Show All" or "Load All" buttons
+    const showAllSelectors = [
+      'button[title*="Show All"]',
+      'button[title*="Load All"]', 
       'button:contains("Show All")',
       'button:contains("Load All")',
-      'select option[value="all"]',
-      'select option[value="-1"]',
-      'select option[value="0"]', // Sometimes 0 means all
-      'a:contains("All")',
-      '.pagination button:contains("All")',
-      '[data-value="all"]',
-      '[data-value="-1"]',
-      '[data-value="0"]'
+      'a[title*="Show All"]',
+      'a:contains("Show All")',
+      '.show-all-btn',
+      '.load-all-btn'
     ];
-
-    // Try to find and click "All" buttons or options
-    for (const selector of loadAllSelectors) {
-      if (selector.includes(':contains')) {
-        const elements = Array.from(document.querySelectorAll(selector.split(':contains')[0]));
-        const matchingElements = elements.filter(el => 
-          el.textContent.toLowerCase().includes('all') || 
-          el.textContent.toLowerCase().includes('show all') ||
-          el.textContent.toLowerCase().includes('load all')
-        );
-        
-        if (matchingElements.length > 0) {
-          console.log('Found "All" button, clicking:', matchingElements[0]);
-          matchingElements[0].click();
-          return true;
-        }
-      } else {
-        const element = document.querySelector(selector);
-        if (element) {
-          console.log('Found "All" option, selecting:', element);
-          if (element.tagName === 'OPTION') {
-            element.selected = true;
-            element.parentElement.dispatchEvent(new Event('change'));
-          } else {
-            element.click();
-          }
-          return true;
-        }
-      }
-    }
-
-    // Try to set dropdown/select to maximum value or "All"
-    const selects = document.querySelectorAll('select');
-    for (const select of selects) {
-      const options = Array.from(select.options);
-      
-      // Look for "All" option first
-      const allOption = options.find(opt => 
-        opt.text.toLowerCase().includes('all') || 
-        opt.value.toLowerCase() === 'all' ||
-        opt.value === '-1' || 
-        opt.value === '0'
-      );
-      
-      if (allOption) {
-        console.log('Setting select to "All" option:', allOption.value);
-        allOption.selected = true;
-        select.dispatchEvent(new Event('change'));
-        return true;
-      }
-      
-      // If no "All" option, find maximum numeric value
-      const maxValueOption = options.reduce((max, option) => {
-        const value = parseInt(option.value);
-        return !isNaN(value) && value > parseInt(max.value || '0') ? option : max;
-      }, { value: '0' });
-      
-      if (maxValueOption && parseInt(maxValueOption.value) > 0) {
-        console.log('Setting select to maximum value:', maxValueOption.value);
-        maxValueOption.selected = true;
-        select.dispatchEvent(new Event('change'));
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  // New function specifically for Quasar Vue.js framework tables
-  function tryQuasarPagination() {
-    console.log('Checking for Quasar table pagination...');
     
-    // Look for Quasar table pagination info
-    const paginationInfo = document.querySelector('.q-table__bottom-item');
-    if (paginationInfo && paginationInfo.textContent.includes('of')) {
-      console.log('Found Quasar pagination:', paginationInfo.textContent);
-      
-      // Try to find the records per page dropdown
-      const recordsDropdown = document.querySelector('.q-table__select .q-select__dropdown-icon');
-      if (recordsDropdown) {
-        console.log('Found Quasar records per page dropdown');
-        recordsDropdown.click();
-        
-        // Wait a bit for the dropdown to open, then select the highest option
-        setTimeout(() => {
-          const dropdownOptions = document.querySelectorAll('.q-menu .q-item');
-          let maxOption = null;
-          let maxValue = 0;
-          
-          dropdownOptions.forEach(option => {
-            const text = option.textContent.trim();
-            if (text.toLowerCase().includes('all')) {
-              maxOption = option;
-              maxValue = Infinity;
-            } else {
-              const value = parseInt(text);
-              if (!isNaN(value) && value > maxValue) {
-                maxValue = value;
-                maxOption = option;
-              }
-            }
-          });
-          
-          if (maxOption) {
-            console.log('Clicking Quasar dropdown option:', maxOption.textContent);
-            maxOption.click();
-            return true;
-          }
-        }, 500);
-        
+    // Try clicking show all buttons first
+    for (const selector of showAllSelectors) {
+      const button = document.querySelector(selector);
+      if (button) {
+        console.log('Found show all button:', button);
+        button.click();
         return true;
       }
-      
-      // Try alternative Quasar selectors
-      const altDropdown = document.querySelector('.q-field--borderless.q-select');
-      if (altDropdown) {
-        console.log('Found alternative Quasar dropdown');
-        altDropdown.click();
+    }
+    
+    // Enhanced Quasar table handling
+    const quasarDropdowns = [
+      '.q-table__select .q-select__dropdown-icon',
+      '.q-field--borderless.q-select .q-select__dropdown-icon', 
+      '.q-table__bottom .q-select .q-select__dropdown-icon',
+      '.q-select__dropdown-icon'
+    ];
+    
+    for (const selector of quasarDropdowns) {
+      const dropdown = document.querySelector(selector);
+      if (dropdown) {
+        console.log('Found Quasar dropdown:', selector);
+        
+        // Click the dropdown to open it
+        dropdown.click();
+        
         setTimeout(() => {
-          const options = document.querySelectorAll('.q-menu .q-item');
-          const lastOption = options[options.length - 1];
-          if (lastOption) {
-            console.log('Clicking last Quasar option:', lastOption.textContent);
-            lastOption.click();
+          // Look for "All" option in various ways
+          const allOptions = [
+            ...document.querySelectorAll('.q-menu .q-item'),
+            ...document.querySelectorAll('.q-menu .q-item__section'),
+            ...document.querySelectorAll('.pagination-option'),
+            ...document.querySelectorAll('[role="option"]')
+          ];
+          
+          console.log(`Found ${allOptions.length} dropdown options`);
+          
+          // Find the "All" option or the highest number
+          let bestOption = null;
+          let highestNumber = 0;
+          
+          for (const option of allOptions) {
+            const text = option.textContent.trim().toLowerCase();
+            console.log('Checking option:', text);
+            
+            if (text === 'all' || text.includes('all')) {
+              bestOption = option;
+              console.log('Found "All" option');
+              break;
+            }
+            
+            // Check for highest number
+            const number = parseInt(text);
+            if (!isNaN(number) && number > highestNumber) {
+              highestNumber = number;
+              bestOption = option;
+            }
           }
-        }, 500);
+          
+          if (bestOption) {
+            console.log('Clicking best option:', bestOption.textContent);
+            bestOption.click();
+          } else {
+            console.log('No suitable option found, trying last option');
+            const lastOption = allOptions[allOptions.length - 1];
+            if (lastOption) {
+              lastOption.click();
+            }
+          }
+        }, 1000); // Increased delay to ensure dropdown is fully open
+        
         return true;
       }
     }
@@ -237,19 +166,25 @@
       '.q-table__container', // Quasar table container
       '.table-header',
       '.table-controls',
-      '.data-table-header'
+      '.data-table-header',
+      '.table-wrapper',
+      'table'
     ];
 
     let targetContainer = null;
     for (const selector of containers) {
-      targetContainer = document.querySelector(selector);
-      if (targetContainer) break;
+      const elements = document.querySelectorAll(selector);
+      if (elements.length > 0) {
+        targetContainer = elements[0]; // Use the first found container
+        console.log('Found container for download button:', selector);
+        break;
+      }
     }
 
     if (targetContainer) {
       const downloadBtn = document.createElement('button');
       downloadBtn.className = 'table-sniffer-download-btn q-btn q-btn-item non-selectable no-outline q-btn--outline q-btn--rectangle text-blue-grey-6 q-btn--actionable q-focusable q-hoverable q-mr-sm';
-      downloadBtn.style.cssText = 'font-size: 15px; margin-left: 10px;';
+      downloadBtn.style.cssText = 'font-size: 15px; margin: 10px; position: relative; z-index: 1000; background: white; border: 1px solid #ccc; padding: 8px 16px; border-radius: 4px; cursor: pointer;';
       downloadBtn.innerHTML = `
         <span class="q-focus-helper"></span>
         <span class="q-btn__content text-center col items-center q-anchor--skip justify-center row">
@@ -275,15 +210,33 @@
         }
       });
 
-      // Insert the button at the beginning of the container
-      if (targetContainer.querySelector('.q-space')) {
+      // Insert the button appropriately
+      if (targetContainer.tagName.toLowerCase() === 'table') {
+        // If target is a table, create a wrapper div
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'position: relative; margin-bottom: 10px;';
+        wrapper.appendChild(downloadBtn);
+        targetContainer.parentNode.insertBefore(wrapper, targetContainer);
+      } else if (targetContainer.querySelector('.q-space')) {
         // For Quasar tables, insert before the spacer
         targetContainer.insertBefore(downloadBtn, targetContainer.querySelector('.q-space'));
       } else {
-        targetContainer.appendChild(downloadBtn);
+        // Insert at the beginning of the container
+        targetContainer.insertBefore(downloadBtn, targetContainer.firstChild);
       }
       
       console.log('Download button injected successfully');
+    } else {
+      console.log('No suitable container found for download button');
+    }
+  }
+
+  // Function to continuously check for tables and inject button
+  function checkAndInjectButton() {
+    const tables = document.querySelectorAll('table');
+    if (tables.length > 0 && !document.querySelector('.table-sniffer-download-btn')) {
+      console.log('Tables detected, injecting download button...');
+      injectDownloadButton();
     }
   }
 
@@ -455,18 +408,49 @@
             console.log('No load all button found, downloading current table state...');
             autoDownloadLargestTable();
           }
-        }, 2000);
+        }, 3000); // Increased delay to ensure page is fully loaded
       }
     });
   }
 
   // Initialize auto-download check
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', checkForAutoDownload);
+    document.addEventListener('DOMContentLoaded', () => {
+      checkForAutoDownload();
+      checkAndInjectButton();
+    });
   } else {
     checkForAutoDownload();
+    checkAndInjectButton();
   }
 
-  // Inject download button if missing
-  injectDownloadButton();
+  // Set up observers to detect new tables and inject buttons
+  const observer = new MutationObserver((mutations) => {
+    let shouldCheck = false;
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.tagName === 'TABLE' || node.querySelector('table')) {
+              shouldCheck = true;
+              break;
+            }
+          }
+        }
+      }
+    });
+    
+    if (shouldCheck) {
+      setTimeout(checkAndInjectButton, 1000); // Delay to ensure DOM is stable
+    }
+  });
+
+  // Start observing
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+
+  // Also inject button immediately if tables are already present
+  setTimeout(checkAndInjectButton, 2000);
 })();
