@@ -92,20 +92,32 @@
     // Common selectors for "Show All" or "Load All" buttons
     const showAllSelectors = [
       'button[title*="Show All"]',
-      'button[title*="Load All"]', 
-      'button:contains("Show All")',
-      'button:contains("Load All")',
+      'button[title*="Load All"]',
       'a[title*="Show All"]',
-      'a:contains("Show All")',
       '.show-all-btn',
       '.load-all-btn'
     ];
     
     // Try clicking show all buttons first
     for (const selector of showAllSelectors) {
-      const button = document.querySelector(selector);
-      if (button) {
-        console.log('Found show all button:', button);
+      try {
+        const button = document.querySelector(selector);
+        if (button) {
+          console.log('Found show all button:', button);
+          button.click();
+          return true;
+        }
+      } catch (error) {
+        console.log('Error with selector:', selector, error);
+      }
+    }
+    
+    // Look for buttons with text content containing "Show All" or "Load All"
+    const allButtons = document.querySelectorAll('button, a');
+    for (const button of allButtons) {
+      const text = button.textContent.toLowerCase().trim();
+      if (text.includes('show all') || text.includes('load all') || text === 'all') {
+        console.log('Found show all button by text:', button);
         button.click();
         return true;
       }
@@ -120,62 +132,67 @@
     ];
     
     for (const selector of quasarDropdowns) {
-      const dropdown = document.querySelector(selector);
-      if (dropdown) {
-        console.log('Found Quasar dropdown:', selector);
-        
-        // Click the dropdown to open it
-        dropdown.click();
-        
-        setTimeout(() => {
-          // Look for "All" option in various ways
-          const allOptions = [
-            ...document.querySelectorAll('.q-menu .q-item'),
-            ...document.querySelectorAll('.q-menu .q-item__section'),
-            ...document.querySelectorAll('.pagination-option'),
-            ...document.querySelectorAll('[role="option"]')
-          ];
+      try {
+        const dropdown = document.querySelector(selector);
+        if (dropdown) {
+          console.log('Found Quasar dropdown:', selector);
           
-          console.log(`Found ${allOptions.length} dropdown options`);
+          // Click the dropdown to open it
+          dropdown.click();
           
-          // Find the "All" option or the highest number
-          let bestOption = null;
-          let highestNumber = 0;
-          
-          for (const option of allOptions) {
-            const text = option.textContent.trim().toLowerCase();
-            console.log('Checking option:', text);
+          setTimeout(() => {
+            // Look for "All" option in various ways
+            const allOptions = [
+              ...document.querySelectorAll('.q-menu .q-item'),
+              ...document.querySelectorAll('.q-menu .q-item__section'),
+              ...document.querySelectorAll('.pagination-option'),
+              ...document.querySelectorAll('[role="option"]')
+            ];
             
-            if (text === 'all' || text.includes('all')) {
-              bestOption = option;
-              console.log('Found "All" option');
-              break;
+            console.log(`Found ${allOptions.length} dropdown options`);
+            
+            // Find the "All" option or the highest number
+            let bestOption = null;
+            let highestNumber = 0;
+            
+            for (const option of allOptions) {
+              const text = option.textContent.trim().toLowerCase();
+              console.log('Checking option:', text);
+              
+              if (text === 'all' || text.includes('all')) {
+                bestOption = option;
+                console.log('Found "All" option');
+                break;
+              }
+              
+              // Check for highest number
+              const number = parseInt(text);
+              if (!isNaN(number) && number > highestNumber) {
+                highestNumber = number;
+                bestOption = option;
+              }
             }
             
-            // Check for highest number
-            const number = parseInt(text);
-            if (!isNaN(number) && number > highestNumber) {
-              highestNumber = number;
-              bestOption = option;
+            if (bestOption) {
+              console.log('Clicking best option:', bestOption.textContent);
+              bestOption.click();
+            } else {
+              console.log('No suitable option found, trying last option');
+              const lastOption = allOptions[allOptions.length - 1];
+              if (lastOption) {
+                lastOption.click();
+              }
             }
-          }
+          }, 1000); // Increased delay to ensure dropdown is fully open
           
-          if (bestOption) {
-            console.log('Clicking best option:', bestOption.textContent);
-            bestOption.click();
-          } else {
-            console.log('No suitable option found, trying last option');
-            const lastOption = allOptions[allOptions.length - 1];
-            if (lastOption) {
-              lastOption.click();
-            }
-          }
-        }, 1000); // Increased delay to ensure dropdown is fully open
-        
-        return true;
+          return true;
+        }
+      } catch (error) {
+        console.log('Error with Quasar selector:', selector, error);
       }
     }
     
+    console.log('No load all buttons or dropdowns found');
     return false;
   }
 
